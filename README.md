@@ -4,7 +4,7 @@ AR Drone simulation in Gazebo with Custom teleop keyboard
 
 Prerequisites:
 
-    sudo apt-get install ros-kinetic-teleop-twist-keyboard //NEW
+    sudo apt-get install ros-kinetic-teleop-twist-keyboard
 
 How to install the simulator:
 
@@ -34,10 +34,10 @@ Creating the package for the custome keyboard:
     cd ~/ardrone_simulator/src
     catkin_create_pkg custom_keyboard
     cd custom_keyboard
-    mkdir -p src //NEW
+    mkdir -p src
     cd src
     add to src file teleop_twist_keyboard.py from this repository
-    chmod -x teleop_twist_keyboard.py //NEW
+    chmod -x teleop_twist_keyboard.py
     
     cd ~/ardrone_simulator
     catkin_make
