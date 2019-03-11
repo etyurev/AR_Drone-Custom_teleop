@@ -37,7 +37,7 @@ Creating the package for the custome keyboard:
     mkdir -p src
     cd src
     add to src file teleop_twist_keyboard.py from this repository
-    chmod -x teleop_twist_keyboard.py
+    chmod +x teleop_twist_keyboard.py
     
     cd ~/ardrone_simulator
     catkin_make
