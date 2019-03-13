@@ -16,11 +16,12 @@ find_package(catkin REQUIRED COMPONENTS
 find_package( OpenCV REQUIRED)
 
 
+catkin_package(
 #  INCLUDE_DIRS include
-#  LIBRARIES P4GUI
-#  CATKIN_DEPENDS geometry_msgs roscpp sensor_msgs std_msgs
+#  LIBRARIES p4ll
+#  CATKIN_DEPENDS geometry_msgs roscpp sensor_msgs
 #  DEPENDS system_lib
-
+)
 
 ###########
 ## Build ##
