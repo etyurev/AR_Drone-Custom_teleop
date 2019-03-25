@@ -10,6 +10,7 @@
 #include "std_msgs/Empty.h"
 #include "geometry_msgs/Twist.h"
 #include "geometry_msgs/Pose2D.h"
+#include "ardrone_autonomy/Navdata.h"
 
 #include <cv_bridge/cv_bridge.h>
 
@@ -22,12 +23,37 @@ using namespace std;
 
 //Global variables
 cv::Mat imgFront, imgBottom;
-std::string cmdXStr, cmdYStr, cmdZStr, cmdRotStr;
 std::string sonarString;
 std::string takeOffLandStr;
+std::string xVelStr;
+float xVel, zVel;
 Mat imgTongue(350,200, CV_8UC3, Scalar(0,0,0));
 Mat imgTongueDraw;
+bool auPosReceived;
+float cmdLinX, cmdLinZ, cmdAngZ;
+int fadeAlpha = 1;
 
+void callbackNavdata(const ardrone_autonomy::Navdata::ConstPtr& msg){
+
+    //Subscriber to all the navigation data from the drone.
+
+    xVel = msg->vx*0.001;
+    if (xVel < 0.05){
+      xVel = 0.0;
+    }
+
+    zVel = msg->vz*0.001;
+    if (zVel < 0.05){
+      zVel = 0.0;
+    }
+      std::ostringstream ss;
+      ss.precision(2);
+      ss << xVel;
+
+     xVelStr = ss.str();
+}
+
+/*
 void callbackTakeOff(const std_msgs::Empty::ConstPtr& msg){
 
       std::ostringstream ss;
@@ -41,8 +67,12 @@ void callbackLand(const std_msgs::Empty::ConstPtr& msg){
       ss << "Grounded";
      takeOffLandStr = ss.str();
 }
+*/
 
 void callbackSonarHeight(const sensor_msgs::Range::ConstPtr& msg){
+
+      //Subscriber to the sonar, telling the elevation over objects underneath
+      //the drone.
 
       std::ostringstream ss;
       ss << "Sonar height: " << msg->range;
@@ -51,75 +81,88 @@ void callbackSonarHeight(const sensor_msgs::Range::ConstPtr& msg){
 
 void callbackCMDVel(const geometry_msgs::Twist::ConstPtr& msg){
 
-  std::ostringstream ssX, ssY, ssZ, ssRotZ;
-  ssX << "Velocity Forward/Backwards: " << msg->linear.x;
-  //ssY << "Y Vel: " << msg->linear.y;
-  ssZ << "Velocity Elevation: " << msg->linear.z;
-  ssRotZ << "Velocity Rotation: " << msg->angular.z;
+  //Subscribes to the command inputs to the drone, both linear and angular
+  //Updates the global variables
 
-  cmdXStr =ssX.str();
-  //cmdYStr =ssY.str();
-  cmdZStr =ssZ.str();
-  cmdRotStr = ssRotZ.str();
+  cmdLinX = msg->linear.x;
+  cmdAngZ = msg->angular.z;
+  cmdLinZ = msg->linear.z;
 }
 
 void callbackImageFront(const sensor_msgs::ImageConstPtr& msg){
 
+    //Subscriber to the front image of the drone, updates the global sub_Image
+    //variable
      cv_bridge::CvImagePtr img;
      img = cv_bridge::toCvCopy(msg,sensor_msgs::image_encodings::RGB8);
      imgFront = img->image;
 
+     //Resize the top image
      resize(imgFront, imgFront, cv::Size(), 2, 2);
 
 }
 void callbackImageBottom(const sensor_msgs::ImageConstPtr& msg){
 
+    //Subscriber to the bottom image of the drone, updates the global imgBottom
+    //variable
      cv_bridge::CvImagePtr img;
      img = cv_bridge::toCvCopy(msg,sensor_msgs::image_encodings::RGB8);
      imgBottom = img->image;
 
+     //Resize the bottom image
      resize(imgBottom, imgBottom, cv::Size(), 0.5, 0.5);
 
 }
 void callbackTongue(const geometry_msgs::Pose2D::ConstPtr& msg){
 
-      imgTongueDraw = imgTongue.clone();
+    //Subscriber to AU_position, aka the coodinates from the ITCI
+
      float x = msg->x;
      float y = msg->y;
 
      float scaleX = 0.7815; //200/256
      float scaleY = 1.8135; //350/193
 
-     if(x > 128){
-       x = 383 - x;
+     if ((x == 128) && (y == 128)){
+       auPosReceived = false;
      }
-     else if(x < 128){
-       x = 128 - x;
-     }
-
-     if((30 < y) && (y < 128)){
-       y = 126 -y;
-     }
-     else if ((128 <y)&&( y < 226)){
-       y = 323-y;
+     else{
+       auPosReceived = true;
      }
 
-     x = x * scaleX;
-     y = y * scaleY;
+     // if a command from the ITCI has been received update the ITCI image
+     if(auPosReceived == true){
 
-     ROS_INFO("%f", x);
-     ROS_INFO("%f", y);
+       // Convert AU_position coordinates into openCV x,y coordinates
 
+       if(x > 128){
+         x = 383 - x;
+       }
+       else if(x < 128){
+         x = 128 - x;
+       }
 
-     rectangle(imgTongueDraw, Point(x,y), Point(x+2,y+2), Scalar(0,0,255), 4);
+       if((30 < y) && (y < 128)){
+         y = 126 -y;
+       }
+       else if ((128 <y)&&( y < 226)){
+         y = 323-y;
+       }
 
+       //Scale the coordinates according to the imgTongue
+       x = x * scaleX;
+       y = y * scaleY;
+
+       //Clone the orignal ITCI image and draw a rectangle on the clone
+       imgTongueDraw = imgTongue.clone();
+       rectangle(imgTongueDraw, Point(x,y), Point(x+2,y+2), Scalar(0,0,255), 4);
+   }
 
 }
 
 void createTongueImg(){
-  //Mat imgTongue(193,256, CV_8UC3, Scalar(0,0,0));
 
-  //cvtColor(imgTongue,imgTongue, COLOR_BGR2RGB);
+  //Change the color scheme here
 
   int colorR = 255;
   int colorG = 255;
@@ -127,18 +170,19 @@ void createTongueImg(){
 
   //Add lines
 
-  //Top part
+  ///Top part
 
   line(imgTongue,Point(0,imgTongue.rows*0.2487),Point(imgTongue.cols,imgTongue.rows*0.2487),Scalar(colorR,colorG,colorB),1);
   line(imgTongue,Point(imgTongue.cols*0.5,0),Point(imgTongue.cols*0.5,imgTongue.rows*0.4974),Scalar(colorR,colorG,colorB),1);
 
-  //Bottom part
+  ///Bottom part
   line(imgTongue,Point(0,imgTongue.rows*0.4974),Point(imgTongue.cols,imgTongue.rows*0.4974),Scalar(colorR,colorG,colorB),1);
   line(imgTongue,Point(0,imgTongue.rows),Point(imgTongue.cols,imgTongue.rows*0.4974),Scalar(colorR,colorG,colorB),1);
   line(imgTongue,Point(0,imgTongue.rows*0.4974),Point(imgTongue.cols,imgTongue.rows),Scalar(colorR,colorG,colorB),1);
 
   //Add text
 
+  /// Declare strings
   std::string strUp = "UP";
   std::string strDown = "DOWN";
   std::string strTakeOff = "Start";
@@ -149,8 +193,9 @@ void createTongueImg(){
   std::string strRotateLeft = "L";
   std::string strStop = "S";
 
-  cv::putText(imgTongue, strUp, Point2f(imgTongue.cols*0.175, imgTongue.rows*0.125*3), FONT_HERSHEY_DUPLEX, 0.7, Scalar(colorR, colorG, colorB), 2, 8, false);
-  cv::putText(imgTongue, strDown, Point2f(imgTongue.cols*0.6125, imgTongue.rows*0.125*3), FONT_HERSHEY_DUPLEX, 0.7, Scalar(colorR, colorG, colorB), 2, 8, false);
+  /// Put text on the imgTongue
+  cv::putText(imgTongue, strDown, Point2f(imgTongue.cols*0.175, imgTongue.rows*0.125*3), FONT_HERSHEY_DUPLEX, 0.7, Scalar(colorR, colorG, colorB), 2, 8, false);
+  cv::putText(imgTongue, strUp, Point2f(imgTongue.cols*0.6125, imgTongue.rows*0.125*3), FONT_HERSHEY_DUPLEX, 0.7, Scalar(colorR, colorG, colorB), 2, 8, false);
   cv::putText(imgTongue, strTakeOff, Point2f(imgTongue.cols*0.075, imgTongue.rows*0.125), FONT_HERSHEY_DUPLEX, 0.7, Scalar(colorR, colorG, colorB), 2, 8, false);
   cv::putText(imgTongue, strLand, Point2f(imgTongue.cols*0.6125, imgTongue.rows*0.125), FONT_HERSHEY_DUPLEX, 0.7, Scalar(colorR, colorG, colorB), 2, 8, false);
 
@@ -163,10 +208,72 @@ void createTongueImg(){
   //waitKey(0);
 }
 
+float getAlpha(){
+
+  //If command from ITCI is available, alpha has a higher value
+  if(auPosReceived == true){
+    fadeAlpha = 10;
+    return(0.5);
+  }
+  fadeAlpha--;
+  if (fadeAlpha < 2){
+    fadeAlpha = 1;
+  }
+  return (0.1+(fadeAlpha*0.04));
+}
+
+void splitRGBAlpha(Mat& img, Mat& mask){
+  vector<Mat> rgbLayer;
+  split(img,rgbLayer);         // seperate channels
+  Mat cs[3] = { rgbLayer[0],rgbLayer[1],rgbLayer[2] };
+  merge(cs,3,img);  // glue together again
+  mask = rgbLayer[3];       // png's alpha channel used as mask
+}
+
+void drawVelocity(){
+
+  cv::Mat imgArrow, mask;
+
+  //Check what commands is sent to the drone
+  if(cmdLinX > 0){
+    //Read front image file
+    imgArrow = imread("/home/albert/P4Ros/src/P4GUI/src/imgArrowFront.png",-1);
+    resize(imgArrow, imgArrow, cv::Size(), 0.5, 0.5);
+
+    splitRGBAlpha(imgArrow, mask);
+    imgArrow.copyTo(imgFront(cv::Rect(imgFront.cols*0.465, imgFront.rows*0.85, imgArrow.cols, imgArrow.rows)),mask);
+
+
+    //Add forward velocity to GUI
+    cv::putText(imgFront, xVelStr, Point2f(imgFront.cols*0.48, imgFront.rows*0.84), FONT_HERSHEY_DUPLEX, 0.9, Scalar(255, 255, 255), 2, 8, false);
+  }
+  else if (cmdAngZ < 0){
+    ///Read right arrow image file
+    imgArrow = imread("/home/albert/P4Ros/src/P4GUI/src/imgArrowTurnRight.png",-1);
+
+    resize(imgArrow, imgArrow, cv::Size(), 0.5, 0.5);
+    splitRGBAlpha(imgArrow, mask);
+    imgArrow.copyTo(imgFront(cv::Rect(imgFront.cols*0.53, imgFront.rows*0.84, imgArrow.cols, imgArrow.rows)),mask);
+  }
+  else if (cmdAngZ > 0){
+    ///Read right arrow image file
+    imgArrow = imread("/home/albert/P4Ros/src/P4GUI/src/imgArrowTurnLeft.png",-1);
+
+    resize(imgArrow, imgArrow, cv::Size(), 0.5, 0.5);
+    splitRGBAlpha(imgArrow, mask);
+    imgArrow.copyTo(imgFront(cv::Rect(imgFront.cols*0.43, imgFront.rows*0.84, imgArrow.cols, imgArrow.rows)),mask);
+  }
+
+}
+
+
+
 int main(int argc, char **argv) {
 
-  imgFront = imread("/home/albert/Pictures/flowers.jpg");
-  imgBottom = imread("/home/albert/Pictures/flowers.jpg");
+  //Initialize some starting images
+  imgFront = imread("../flowers.jpg");
+  resize(imgFront, imgFront, cv::Size(), 3, 3);
+  imgBottom = imread("../flowers.jpg");
   resize(imgBottom, imgBottom, cv::Size(), 0.1, 0.1);
 
   createTongueImg();
@@ -177,51 +284,38 @@ int main(int argc, char **argv) {
 
   ros::init(argc, argv,"Cool");
 
-  std::ostringstream ssX, ssY, ssZ, ssRotZ, ss;
-  ssX << "Velocity Forward/Backwards: " << 0;
-  ssZ << "Velocity Elevation: " << 0;
-  ssRotZ << "Velocity Rotation: " << 0;
-
-  cmdXStr =ssX.str();
-  cmdZStr =ssZ.str();
-  cmdRotStr = ssRotZ.str();
-
-  ss << "Grounded";
-  takeOffLandStr = ss.str();
-
+  //All the relevant ros subscribers declared here
   ros::NodeHandle nh;
   ros::Subscriber sub_ImageFront = nh.subscribe("/ardrone/front/image_raw", 5, callbackImageFront);
   ros::Subscriber sub_ImageBottom = nh.subscribe("/ardrone/bottom/image_raw", 5, callbackImageBottom);
   ros::Subscriber sub_SonarHeight = nh.subscribe("/sonar_height", 5, callbackSonarHeight);
   ros::Subscriber sub_CMDVel = nh.subscribe("/cmd_vel", 5, callbackCMDVel);
-  ros::Subscriber sub_TakeOff = nh.subscribe("/ardrone/takeoff", 5, callbackTakeOff);
-  ros::Subscriber sub_Land = nh.subscribe("/ardrone/land", 5, callbackLand);
+  //ros::Subscriber sub_TakeOff = nh.subscribe("/ardrone/takeoff", 5, callbackTakeOff);
+  //ros::Subscriber sub_Land = nh.subscribe("/ardrone/land", 5, callbackLand);
   ros::Subscriber sub_tongueCoordinates = nh.subscribe("/AU_position", 5, callbackTongue);
+  ros::Subscriber sub_Navdata = nh.subscribe("/ardrone/navdata", 5, callbackNavdata);
 
   ros::Rate loop_rate(10);
 
     while (ros::ok()){
 
-      cv::putText(imgFront, sonarString, Point2f(imgFront.cols*0.05, imgFront.rows*0.95), FONT_HERSHEY_DUPLEX, 0.7, Scalar(255, 255, 255), 2, 8, false);
-      cv::putText(imgFront, cmdZStr, Point2f(imgFront.cols*0.05, imgFront.rows*0.92), FONT_HERSHEY_DUPLEX, 0.7, Scalar(255, 255, 255), 2, 8, false);
-      cv::putText(imgFront, cmdXStr, Point2f(imgFront.cols*0.05, imgFront.rows*0.89), FONT_HERSHEY_DUPLEX, 0.7, Scalar(255, 255, 255), 2, 8, false);
-      cv::putText(imgFront, cmdRotStr, Point2f(imgFront.cols*0.05, imgFront.rows*0.86), FONT_HERSHEY_DUPLEX, 0.7, Scalar(255, 255, 255), 2, 8, false);
-      cv::putText(imgFront, takeOffLandStr, Point2f(imgFront.cols*0.05, imgFront.rows*0.83), FONT_HERSHEY_DUPLEX, 0.7, Scalar(255, 255, 255), 2, 8, false);
-      //cv::putText(imgMat, cmdYStr, Point2f(imgMat.cols*0.05, imgMat.rows*0.85), FONT_HERSHEY_DUPLEX, 0.7, Scalar(255, 255, 255), 2, 8, false);
+      //Add readings from the drone to the GUI in form of text
+      //cv::putText(imgFront, sonarString, Point2f(imgFront.cols*0.05, imgFront.rows*0.95), FONT_HERSHEY_DUPLEX, 0.7, Scalar(255, 255, 255), 2, 8, false);
 
-
-
+      //Add picture-in-picture of bottom camera
       imgBottom.copyTo(imgFront(cv::Rect(imgFront.cols*0.72, imgFront.rows*0.72, imgBottom.cols, imgBottom.rows)));
       rectangle(imgFront,Point((imgFront.cols*0.72)-1,(imgFront.rows*0.72)-1),Point((imgFront.cols*0.72+imgBottom.cols)+1,(imgFront.rows*0.72+imgBottom.rows)+1),(0,255,0),2);
 
-      // min_x, min_y should be valid in A and [width height] = size(B)
-      cv::Rect roi = cv::Rect(0, 0, imgTongue.cols, imgTongue.rows);
+      // min_x, min_y should be valid in imgFront and [width height] = size(imgTongue)
+      cv::Rect roi = cv::Rect(imgFront.cols*0.82, imgFront.rows*0.03, imgTongue.cols, imgTongue.rows);
 
-      // Blend the ROI of A with B into the ROI of out_image
-      float alpha = 0.8;
-      cv::addWeighted(imgFront(roi),alpha,imgTongueDraw,1-alpha,0.0,imgFront(roi));
+      // Blend the ROI of imgFront with imgTongueDraw into the ROI of out_image
+      float alpha = getAlpha();
+      cv::addWeighted(imgFront(roi),0.8,imgTongueDraw,alpha,0.0,imgFront(roi));
+      drawVelocity();
+
+      //Show the GUI
       cv::imshow("Ar Drone",imgFront);
-      //cv::imshow("Ar Drone",imgTongueDraw);
 
       waitKey(1);
 
