@@ -103,3 +103,7 @@ From here you will need 3 terminals, one for the simulation, one for the custom_
     rosrun p4GUI p4GUI_node
 
 The p4Gui node subscribes to the /ardrone/front/image_raw topic and converts it into a opencv Mat c++ object. For the real drone the topic to subscribe to might differ.
+
+# i_tongue_package
+
+See setup in folder
