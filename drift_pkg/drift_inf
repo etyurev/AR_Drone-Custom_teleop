@@ -1,0 +1,10 @@
+Add the package to a workspace, change line 163 in te cmakelist and build it.
+
+Pretty much just run the code.
+rosrun drift_pkg v1_drift.py
+
+It will say ready, when it is ready. Otherwise there is a problem with subscribing to data from the bottom camera.
+
+Turning on and off with these commands in terminal(true for activation)
+rostopic pub /hover_mode std_msgs/Bool '{data: True}'
+rostopic pub /hover_mode std_msgs/Bool '{data: False}'
