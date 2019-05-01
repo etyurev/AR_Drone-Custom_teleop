@@ -1,0 +1,3 @@
+<launch>
+    <node pkg="i_tongue_pkg" name="iTongue" type="iTongue_pub.py" output="screen"/>
+</launch>
