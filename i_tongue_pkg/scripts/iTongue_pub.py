@@ -9,14 +9,15 @@ import rospy
 from geometry_msgs.msg import Pose2D
 from geometry_msgs.msg import Twist
 from std_msgs.msg import Empty
-
+from std_msgs.msg import Bool
 import numpy
 import math
 import sys
 import serial
 from PyQt4 import QtGui, QtCore
 
-y_upper_lim=100
+
+y_upper_lim = 100
 
 class serial_handle(QtCore.QObject):
 
@@ -30,6 +31,7 @@ class serial_handle(QtCore.QObject):
     def read_it(self):
         while self.reading:
             serialData = self.serial.readline().decode('ascii')
+            #print(serialData)
             if serialData[0]=='S':
                 self.sensors = []
                 for i in range(2):
@@ -61,9 +63,12 @@ class Window(QtGui.QMainWindow):
         self.pubVel = rospy.Publisher('cmd_vel', Twist, queue_size=10)
         self.pubTake = rospy.Publisher('/ardrone/takeoff', Empty, queue_size = 1)
         self.pubLand = rospy.Publisher('/ardrone/land', Empty, queue_size = 1)
+        self.pubHover = rospy.Publisher('/hover_mode',Bool,queue_size =1)
         self.empty_msg = Empty()
+        self.H_count = 0
+        self.activated = False
         self.home()
-        
+
     def home(self):
         # Initialization
         font = QtGui.QFont()
@@ -82,7 +87,7 @@ class Window(QtGui.QMainWindow):
         self.gridConnect.addWidget(self.labelCOM,0,0)
 
         self.comboBoxPort = QtGui.QComboBox(self)
-        self.comboBoxPort.addItem('/dev/rfcomm0')
+        #self.comboBoxPort.addItem('/dev/rfcomm0')
         self.comboBoxPort.addItem('/dev/rfcomm1')
         self.comboBoxPort.addItem('/dev/rfcomm2')
         self.comboBoxPort.addItem('/dev/rfcomm3')
@@ -123,16 +128,19 @@ class Window(QtGui.QMainWindow):
     def move_drone(self, key,velocity):
         #print(key)
         vel_cmd = Twist()
+        vel = 0.3
         if key == 'F':
-            vel_cmd.linear.x = velocity[0]
+            vel_cmd.linear.x = velocity
         elif key == 'R':
-            vel_cmd.angular.z = -1.5*velocity[1]
+            vel_cmd.angular.z = 1.7#1.5*vel#ocity[1]
         elif key == 'L':
-            vel_cmd.angular.z = 1.5*velocity[1]
+            vel_cmd.angular.z = -1.7#*vel#ocity[1]
         elif key == 'S':
             vel_cmd.linear.x = 0
             vel_cmd.angular.z = 0
             vel_cmd.linear.z = 0
+            vel_cmd.linear.y = 0
+            H_count=0
         elif key == 'U':
             vel_cmd.linear.z =  0.5
         elif key == 'D':
@@ -142,12 +150,37 @@ class Window(QtGui.QMainWindow):
         elif key == 'T':
             self.pubTake.publish(self.empty_msg)
         elif key == 'RF':
-            vel_cmd.linear.x=velocity[0]
-            vel_cmd.angular.z=-velocity[1]
+            vel_cmd.linear.y=0.5*vel#ocity[0]
+            vel_cmd.linear.x=0.5*vel
+            #vel_cmd.angular.z=-velocity[1]
         elif key == 'LF':
-            vel_cmd.linear.x=velocity[0]
-            vel_cmd.angular.z=velocity[1]
-        self.pubVel.publish(vel_cmd)
+            vel_cmd.linear.y=-0.5*vel#ocity[0]
+            vel_cmd.linear.x=0.5*vel
+            #vel_cmd.angular.z=velocity[1]
+        elif key == 'HL':
+            vel_cmd.linear.y=-velocity
+        elif key == 'HR':
+            vel_cmd.linear.y=velocity
+        #below only used for hovering until self.pubvel.publish
+        elif key == 'H':
+            self.H_count = self.H_count + 1
+        if key != 'H':
+            self.H_count = 0
+
+        if self.H_count > 20:
+            if not self.activated:
+                print('activate hover')
+                self.pubHover.publish(True)
+                self.activated = True
+                self.H_count = 0
+            elif self.activated:
+                print('deactivate hover')
+                self.pubHover.publish(False)
+                self.activated = False
+                self.H_count = 0
+
+        if not self.activated:
+            self.pubVel.publish(vel_cmd)
 
     def read_serial(self):
 
@@ -165,61 +198,50 @@ class Window(QtGui.QMainWindow):
         value=[]
         #Combination to stop.'when not activated for some time.' And
         # and not stop when when just activated for little time.
-
-        if which_direction == 'F' or which_direction == 'L' or which_direction == 'R' or which_direction =='RF' or which_direction == 'LF':
-            value=self.vector_projection(self.find_vector(position),which_direction)
+        print('which direction: ', which_direction)
+        if which_direction == 'F':
+            value=(position[1]-177)/49.0
             value=self.value_exponential(value)
+            print('value', value)
+        elif which_direction == 'HL':
+            value=(position[0]-60)/67.0
+            value=self.value_exponential(value)
+            print('value', value)
+        elif which_direction == 'HR':
+            value=(196-position[0])/67.0
+            value=self.value_exponential(value)
+            print('value:', value)
+
+        #    value=self.vector_projection(self.find_vector(position),which_direction)
+        #    value=self.value_exponential(value)
             #print('value',value)
-        #print(which_direction)
         self.move_drone(which_direction,value)
 
     #new dividings
     def which_direction2(self,position):
+        #checks left right
         which_direction='S'
         if position[0] != 128 and position[1] > 128:
-            if position[0] <= 127:
-            #checking if its top or bottom.
-                if position[1] > 145:
-                    #above first line?
-                    if position[1]>position[0]*1.266+145:
-                        print('F')
-                        which_direction='F'
-                    #Below second line
-                    elif position[1]<position[0]*0.386+145:
-                        print('L')
-                        which_direction='L'
-                    else:
-                        print('LF')
-                        which_direction='LF'
-                #below third line?
-                elif position[1] < -0.126*position[0]+145:
-                    print('S')
-                    which_direction='S'
+            #checking center
+            if position[0] <= 60 or position[0] >= 196:
+                if position[1] > 177:
+                    which_direction = 'F'
                 else:
-                    print('L')
-                    which_direction='L'
-            else: #The other side.
-                #checking top or bottom
-                if position[1] > 145:
-                    #above first line?
-                    if position[1] > -1.266*position[0]+469:
-                        print('F')
-                        which_direction='F'
-                    #below second line
-                    elif position[1]< -0.386*position[0]+243:
-                        print('R')
-                        which_direction='R'
-                    else:
-                        print('RF')
-                        which_direction='RF'
+                    which_direction = 'H'
+            elif position[0] > 60 and position[0] <= 127:
+                if position[1] < 154:
+                    which_direction = 'L'
+                elif position[1] > 201:
+                    which_direction = 'LF'
                 else:
-                    #below third line?
-                    if position[1] < 0.126*position[0]+112.7:
-                        print('S')
-                        which_direction='S'
-                    else:
-                        print('R')
-                        which_direction='R'
+                    which_direction = 'HL'
+            elif position[0] >= 129 and position[0] < 196:
+                if position[1] < 154:
+                    which_direction = 'R'
+                elif position[1] > 201:
+                    which_direction = 'RF'
+                else:
+                    which_direction = 'HR'
         elif position[1] < 128:
             #top left corner
             if position[1] > y_upper_lim and position[0] > 128:
@@ -235,7 +257,6 @@ class Window(QtGui.QMainWindow):
                 print('D')
                 which_direction='D'
         else:
-            #Todo, make so that it not activated for some time drone stops to hover.
             print('not activated')
             which_direction='S'
         #print('x ',position[0])
@@ -260,9 +281,10 @@ class Window(QtGui.QMainWindow):
     def value_exponential(self,value):
         #Finds a value on a exponential scale with base exp
         exp=7
-        temp=[]
-        temp.append(math.pow(exp,value[0])/exp*0.6)
-        temp.append(math.pow(exp,value[1])/exp*0.6)
+        speed=0.3
+        temp=math.pow(exp,value)/exp*speed
+        #temp.append(math.pow(exp,value)/exp*speed)
+        #temp.append(math.pow(exp,value[1])/exp*speed)
         return temp
 
     def find_vector(self,position):
