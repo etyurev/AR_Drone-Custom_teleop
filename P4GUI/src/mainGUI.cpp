@@ -9,6 +9,7 @@
 #include <sensor_msgs/image_encodings.h>
 #include "sensor_msgs/Range.h"
 #include "std_msgs/Empty.h"
+#include <std_msgs/Bool.h>
 #include "geometry_msgs/Twist.h"
 #include "geometry_msgs/Pose2D.h"
 #include "ardrone_autonomy/Navdata.h"
@@ -40,6 +41,7 @@ std::string altidString;
 float altitude;
 std::string wifiString;
 float wifi;
+bool printCollision;
 
 static void detectAndDraw(const HOGDescriptor &hog, Mat &img)
 {
@@ -216,6 +218,16 @@ void callbackTongue(const geometry_msgs::Pose2D::ConstPtr& msg){
 
 }
 
+void callbackCollision(const std_msgs::Bool::ConstPtr& msg)
+{
+if(msg->data == true){
+  printCollision = true;
+}
+else{
+  printCollision = false;
+}
+}
+
 void createTongueImg(){
 
   //Change the color scheme here
@@ -228,37 +240,58 @@ void createTongueImg(){
 
   ///Top part
 
-  line(imgTongue,Point(0,imgTongue.rows*0.2487),Point(imgTongue.cols,imgTongue.rows*0.2487),Scalar(colorR,colorG,colorB),1);
+  line(imgTongue,Point(0,imgTongue.rows*0.135),Point(imgTongue.cols,imgTongue.rows*0.135),Scalar(colorR,colorG,colorB),1);
   line(imgTongue,Point(imgTongue.cols*0.5,0),Point(imgTongue.cols*0.5,imgTongue.rows*0.4974),Scalar(colorR,colorG,colorB),1);
 
   ///Bottom part
   line(imgTongue,Point(0,imgTongue.rows*0.4974),Point(imgTongue.cols,imgTongue.rows*0.4974),Scalar(colorR,colorG,colorB),1);
-  line(imgTongue,Point(0,imgTongue.rows),Point(imgTongue.cols,imgTongue.rows*0.4974),Scalar(colorR,colorG,colorB),1);
-  line(imgTongue,Point(0,imgTongue.rows*0.4974),Point(imgTongue.cols,imgTongue.rows),Scalar(colorR,colorG,colorB),1);
+  line(imgTongue,Point(imgTongue.cols*0.2617,imgTongue.rows*0.75),Point(imgTongue.cols*0.7383,imgTongue.rows*0.75),Scalar(colorR,colorG,colorB),1);
+  line(imgTongue,Point(imgTongue.cols*0.2617,imgTongue.rows*0.4974),Point(imgTongue.cols*0.2617,imgTongue.rows),Scalar(colorR,colorG,colorB),1);
+  line(imgTongue,Point(imgTongue.cols*0.7383,imgTongue.rows*0.4974),Point(imgTongue.cols*0.7383,imgTongue.rows),Scalar(colorR,colorG,colorB),1);
+
+  // small lines
+  line(imgTongue,Point(0,imgTongue.rows*0.8712),Point(imgTongue.cols*0.2617,imgTongue.rows*0.8712),Scalar(colorR,colorG,colorB),1);
+  line(imgTongue,Point(imgTongue.cols*0.7383,imgTongue.rows*0.8712),Point(imgTongue.cols,imgTongue.rows*0.8712),Scalar(colorR,colorG,colorB),1);
+  line(imgTongue,Point(0,imgTongue.rows*0.6288),Point(imgTongue.cols*0.2617,imgTongue.rows*0.6288),Scalar(colorR,colorG,colorB),1);
+  line(imgTongue,Point(imgTongue.cols*0.7383,imgTongue.rows*0.6288),Point(imgTongue.cols,imgTongue.rows*0.6288),Scalar(colorR,colorG,colorB),1);
+
+  //line(imgTongue,Point(0,imgTongue.rows),Point(imgTongue.cols,imgTongue.rows*0.4974),Scalar(colorR,colorG,colorB),1);
+  //line(imgTongue,Point(0,imgTongue.rows*0.4974),Point(imgTongue.cols,imgTongue.rows),Scalar(colorR,colorG,colorB),1);
 
   //Add text
 
   /// Declare strings
-  std::string strUp = "UP";
-  std::string strDown = "DOWN";
+  std::string strUp = "Up";
+  std::string strDown = "Down";
   std::string strTakeOff = "Start";
   std::string strLand = "Land";
 
   std::string strForward = "F";
-  std::string strRotateRight = "R";
-  std::string strRotateLeft = "L";
+  std::string strRotateRight = "HR";
+  std::string strRotateLeft = "HL";
   std::string strStop = "S";
 
+  std::string strLeftForward = "LF";
+  std::string strRightForward = "RF";
+  std::string strRotLeft = "L";
+  std::string strRotRight = "R";
   /// Put text on the imgTongue
-  cv::putText(imgTongue, strDown, Point2f(imgTongue.cols*0.175, imgTongue.rows*0.125*3), FONT_HERSHEY_DUPLEX, 0.7, Scalar(colorR, colorG, colorB), 2, 8, false);
-  cv::putText(imgTongue, strUp, Point2f(imgTongue.cols*0.6125, imgTongue.rows*0.125*3), FONT_HERSHEY_DUPLEX, 0.7, Scalar(colorR, colorG, colorB), 2, 8, false);
-  cv::putText(imgTongue, strTakeOff, Point2f(imgTongue.cols*0.075, imgTongue.rows*0.125), FONT_HERSHEY_DUPLEX, 0.7, Scalar(colorR, colorG, colorB), 2, 8, false);
-  cv::putText(imgTongue, strLand, Point2f(imgTongue.cols*0.6125, imgTongue.rows*0.125), FONT_HERSHEY_DUPLEX, 0.7, Scalar(colorR, colorG, colorB), 2, 8, false);
-
-  cv::putText(imgTongue, strForward, Point2f(imgTongue.cols*0.47, imgTongue.rows*0.60), FONT_HERSHEY_DUPLEX, 0.7, Scalar(colorR, colorG, colorB), 2, 8, false);
-  cv::putText(imgTongue, strRotateRight, Point2f(imgTongue.cols*0.80, imgTongue.rows*0.75), FONT_HERSHEY_DUPLEX, 0.7, Scalar(colorR, colorG, colorB), 2, 8, false);
-  cv::putText(imgTongue, strRotateLeft, Point2f(imgTongue.cols*0.12, imgTongue.rows*0.75), FONT_HERSHEY_DUPLEX, 0.7, Scalar(colorR, colorG, colorB), 2, 8, false);
+  //Height good
+  cv::putText(imgTongue, strDown, Point2f(imgTongue.cols*0.1, imgTongue.rows*0.33), FONT_HERSHEY_DUPLEX, 0.7, Scalar(colorR, colorG, colorB), 2, 8, false);
+  cv::putText(imgTongue, strUp, Point2f(imgTongue.cols*0.68, imgTongue.rows*0.33), FONT_HERSHEY_DUPLEX, 0.7, Scalar(colorR, colorG, colorB), 2, 8, false);
+  //Good
+  cv::putText(imgTongue, strTakeOff, Point2f(imgTongue.cols*0.115, imgTongue.rows*0.09), FONT_HERSHEY_DUPLEX, 0.7, Scalar(colorR, colorG, colorB), 2, 8, false);
+  cv::putText(imgTongue, strLand, Point2f(imgTongue.cols*0.62, imgTongue.rows*0.09), FONT_HERSHEY_DUPLEX, 0.7, Scalar(colorR, colorG, colorB), 2, 8, false);
+  //height good
+  cv::putText(imgTongue, strForward, Point2f(imgTongue.cols*0.47, imgTongue.rows*0.65), FONT_HERSHEY_DUPLEX, 0.7, Scalar(colorR, colorG, colorB), 2, 8, false);
   cv::putText(imgTongue, strStop, Point2f(imgTongue.cols*0.47, imgTongue.rows*0.9), FONT_HERSHEY_DUPLEX, 0.7, Scalar(colorR, colorG, colorB), 2, 8, false);
+  cv::putText(imgTongue, strRotateRight, Point2f(imgTongue.cols*0.8, imgTongue.rows*0.77), FONT_HERSHEY_DUPLEX, 0.7, Scalar(colorR, colorG, colorB), 2, 8, false);
+  cv::putText(imgTongue, strRotateLeft, Point2f(imgTongue.cols*0.067, imgTongue.rows*0.77), FONT_HERSHEY_DUPLEX, 0.7, Scalar(colorR, colorG, colorB), 2, 8, false);
+  cv::putText(imgTongue, strRightForward, Point2f(imgTongue.cols*0.8, imgTongue.rows*0.59), FONT_HERSHEY_DUPLEX, 0.7, Scalar(colorR, colorG, colorB), 2, 8, false);
+  cv::putText(imgTongue, strLeftForward, Point2f(imgTongue.cols*0.067, imgTongue.rows*0.59), FONT_HERSHEY_DUPLEX, 0.7, Scalar(colorR, colorG, colorB), 2, 8, false);
+  cv::putText(imgTongue, strRotRight, Point2f(imgTongue.cols*0.83, imgTongue.rows*0.955), FONT_HERSHEY_DUPLEX, 0.7, Scalar(colorR, colorG, colorB), 2, 8, false);
+  cv::putText(imgTongue, strRotLeft, Point2f(imgTongue.cols*0.095, imgTongue.rows*0.955), FONT_HERSHEY_DUPLEX, 0.7, Scalar(colorR, colorG, colorB), 2, 8, false);
+
 
   //imshow("tongue", imgTongue);
   //waitKey(0);
@@ -293,7 +326,7 @@ void drawVelocity(){
   //Check what commands is sent to the drone
   if(cmdLinX > 0){
     //Read front image file
-    imgArrow = imread("/home/albert/P4Ros/src/P4GUI/src/imgArrowFront.png",-1);
+    imgArrow = imread("/home/karl/ardrone_simulator/src/P4GUI/src/imgArrowFront.png",-1);
     resize(imgArrow, imgArrow, cv::Size(), 0.5, 0.5);
 
     splitRGBAlpha(imgArrow, mask);
@@ -305,7 +338,7 @@ void drawVelocity(){
   }
   else if (cmdAngZ < 0){
     ///Read right arrow image file
-    imgArrow = imread("/home/albert/P4Ros/src/P4GUI/src/imgArrowTurnRight.png",-1);
+    imgArrow = imread("/home/karl/ardrone_simulator/src/P4GUI/src/imgArrowTurnRight.png",-1);
 
     resize(imgArrow, imgArrow, cv::Size(), 0.5, 0.5);
     splitRGBAlpha(imgArrow, mask);
@@ -313,7 +346,7 @@ void drawVelocity(){
   }
   else if (cmdAngZ > 0){
     ///Read right arrow image file
-    imgArrow = imread("/home/albert/P4Ros/src/P4GUI/src/imgArrowTurnLeft.png",-1);
+    imgArrow = imread("/home/karl/ardrone_simulator/src/P4GUI/src/imgArrowTurnLeft.png",-1);
 
     resize(imgArrow, imgArrow, cv::Size(), 0.5, 0.5);
     splitRGBAlpha(imgArrow, mask);
@@ -326,7 +359,7 @@ void updateBatteryImage()
 {
   cv::Mat imgBattery, mask;
   vector<Mat> rgbLayer;
-  imgBattery = imread("/home/yevgen/ardrone_simulator/src/p4GUI/5percent.png",-1);
+  imgBattery = imread("/home/karl/ardrone_simulator/src/P4GUI/src/5percent.png",-1);
   resize(imgBattery, imgBattery, cv::Size(), 0.1, 0.1);
   split(imgBattery,rgbLayer);
   if(imgBattery.channels() == 4)
@@ -344,9 +377,9 @@ void updateBatteryImage()
 int main(int argc, char **argv) {
 
   //Initialize some starting images
-  imgFront = imread("../flowers.jpg");
+  imgFront = imread("/home/karl/ardrone_simulator/src/P4GUI/src/flowers.jpg");
   resize(imgFront, imgFront, cv::Size(), 3, 3);
-  imgBottom = imread("../flowers.jpg");
+  imgBottom = imread("/home/karl/ardrone_simulator/src/P4GUI/src/flowers.jpg");
   resize(imgBottom, imgBottom, cv::Size(), 0.1, 0.1);
 
   createTongueImg();
@@ -368,6 +401,7 @@ int main(int argc, char **argv) {
   ros::Subscriber sub_Land = nh.subscribe("/ardrone/land", 1, callbackLand);
   ros::Subscriber sub_tongueCoordinates = nh.subscribe("/AU_position", 1, callbackTongue);
   ros::Subscriber sub_Navdata = nh.subscribe("/ardrone/navdata", 1, callbackNavdata);
+  ros::Subscriber collision_sub = nh.subscribe("Collision" , 1, callbackCollision);
 
   ros::Rate loop_rate(30);
 
@@ -389,6 +423,13 @@ int main(int argc, char **argv) {
         cv::putText(imgFront, "FLYING", Point2f(imgFront.cols*0.01, imgFront.rows*0.13), FONT_HERSHEY_DUPLEX, 0.7, Scalar(255, 255, 255), 2, 8, false);
       }
       cv::putText(imgFront, batteryPercentString, Point2f(imgFront.cols*0.91, imgFront.rows*0.047), FONT_HERSHEY_DUPLEX, 0.7, Scalar(255, 255, 255), 2, 8, false);
+
+
+      if(printCollision == true){
+
+        cv::putText(imgFront, "Collision ahead", Point2f(imgFront.cols*0.40, imgFront.rows*0.13), FONT_HERSHEY_DUPLEX, 1.5, Scalar(0, 0, 255), 4, 8, false);
+      }
+
 
       //Update GUI icons and images
       updateBatteryImage();
