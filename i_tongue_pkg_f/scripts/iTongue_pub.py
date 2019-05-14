@@ -63,7 +63,8 @@ class Window(QtGui.QMainWindow):
         self.pubVel = rospy.Publisher('cmd_vel', Twist, queue_size=10)
         self.pubTake = rospy.Publisher('/ardrone/takeoff', Empty, queue_size = 1)
         self.pubLand = rospy.Publisher('/ardrone/land', Empty, queue_size = 1)
-        self.pubHover = rospy.Publisher('/hover_mode',Bool,queue_size =1)
+        self.pubHover = rospy.Publisher('/hover_mode', Bool, queue_size = 1)
+        self.subCollision = rospy.Subscriber("/Collision",Bool, self.collision_callback)
         self.empty_msg = Empty()
         self.H_count = 0
         self.T_count = 0
@@ -125,6 +126,12 @@ class Window(QtGui.QMainWindow):
             self.serial_handler.reading = False
             self.thread.terminate()
             self.serialObj.close()
+
+    def collision_callback(self, bool_data):
+        if bool_data.data:
+            self.activated = True
+        elif not bool_data.data:
+            self.activated = False
 
 
     def move_drone(self, key, velocity):
