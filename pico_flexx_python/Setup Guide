@@ -1,0 +1,33 @@
+Setup Guide to connect to the ITCI
+#########Installation of the package######
+- Make sure pyqt is installed pyqt4. Guide below
+https://www.saltycrane.com/blog/2008/01/how-to-install-pyqt4-on-ubuntu-linux/
+
+- Add the i_tongue_pkg to a catkin workspace.
+
+- Build it using catkin_make
+
+
+######Bluetooth connection to the ITCI######
+- Install blueman:
+sudo apt-get install blueman
+
+- Now press the left most bluetooth icon in the top menu bar an choose "Opsæt ny enhed..."
+
+- Press "Next"
+
+- Find the ITCI called "TKS-SPP-1003" and press next.
+
+- Connect as a "Serial Port" and press next.
+It will then connect as a serialport named "/dev/rfcomm#". Be aware that it often times-out and you will have to reconnect it. When reconnecting the # in the serial port name changes. Pretty annoying...
+
+
+#######Running the program#######
+- Ubuntu needs acces to the python file in order to run the program. This only has to be done once. Go into the folder where the python file is located and type the following command:
+	chmod +x iTongue_pub.py
+
+- Now the program needs access to open the serialport. This has to be done every time you reconnect the ITCI(tab the name to make sure it is connected):
+	sudo chmod 666 /dev/rfcomm#
+
+- Source the catkin workspace and cross your fingers:
+	roslaunch i_tongue_pkg tongue_controller.launch

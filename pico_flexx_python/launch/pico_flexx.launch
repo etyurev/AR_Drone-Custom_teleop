@@ -1,0 +1,3 @@
+<launch>
+    <node pkg="pico_flexx_python" name="sample" type="sample_retrieve_data.py" output="screen"/>
+</launch>
