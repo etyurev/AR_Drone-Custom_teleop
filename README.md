@@ -1,10 +1,18 @@
+# P4 project - Group 470 - Drone control
+
+This github repository is a collection of the ROS nodes developed for this P4 project. The code is therefore mean to be executed as ros nodes.
+
+Prerequisites:
+    
+    Royale SDK - for the pico flexx camera
+    sudo apt-get install ros-kinetic-teleop-twist-keyboard
+    ar drone autonomy ros package
+    
+
 # AR_Drone-Custom_teleop
 
 AR Drone simulation in Gazebo with Custom teleop keyboard
 
-Prerequisites:
-
-    sudo apt-get install ros-kinetic-teleop-twist-keyboard
 
 How to install the simulator:
 
