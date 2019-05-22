@@ -1,6 +1,10 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(depthDetection)
 
+
+
+
+
 # Required catkin packages
 
 find_package(catkin REQUIRED COMPONENTS
@@ -40,17 +44,71 @@ include_directories(
   ${OpenCV_INCLUDE_DIRS}
 )
 
-
-
 ## Declare a C++ executable
 
- add_executable(${PROJECT_NAME}_node src/depthDetect.cpp)
 
-# Libraries
-
+add_executable(${PROJECT_NAME}_segment_data src/segment.cpp
+src/preProcess.cpp src/depthImage.cpp)
 ## Specify libraries to link a library or executable target against
- target_link_libraries(${PROJECT_NAME}_node
+ target_link_libraries(${PROJECT_NAME}_segment_data
    ${catkin_LIBRARIES}
    ${OpenCV_LIBS}
    ${OpenCV_LIBRARIES}
+
  )
+
+ add_executable(${PROJECT_NAME}_sort_data src/sort.cpp
+ src/depthImage.cpp)
+ ## Specify libraries to link a library or executable target against
+  target_link_libraries(${PROJECT_NAME}_sort_data
+    ${catkin_LIBRARIES}
+    ${OpenCV_LIBS}
+    ${OpenCV_LIBRARIES}
+  )
+
+  add_executable(${PROJECT_NAME}_train_classifier src/trainClassifier.cpp
+  src/depthImage.cpp)
+  ## Specify libraries to link a library or executable target against
+   target_link_libraries(${PROJECT_NAME}_train_classifier
+     ${catkin_LIBRARIES}
+     ${OpenCV_LIBS}
+     ${OpenCV_LIBRARIES}
+   )
+
+   add_executable(${PROJECT_NAME}_collect_data src/collect_data.cpp
+   src/depthImage.cpp)
+   ## Specify libraries to link a library or executable target against
+    target_link_libraries(${PROJECT_NAME}_collect_data
+      ${catkin_LIBRARIES}
+      ${OpenCV_LIBS}
+      ${OpenCV_LIBRARIES}
+    )
+
+    add_executable(${PROJECT_NAME}_test src/test.cpp
+    src/preProcess.cpp src/depthImage.cpp)
+    ## Specify libraries to link a library or executable target against
+     target_link_libraries(${PROJECT_NAME}_test
+       ${catkin_LIBRARIES}
+       ${OpenCV_LIBS}
+       ${OpenCV_LIBRARIES}
+
+     )
+     add_executable(${PROJECT_NAME}_report src/reportVisualized.cpp
+     src/preProcess.cpp src/depthImage.cpp)
+     ## Specify libraries to link a library or executable target against
+      target_link_libraries(${PROJECT_NAME}_report
+        ${catkin_LIBRARIES}
+        ${OpenCV_LIBS}
+        ${OpenCV_LIBRARIES}
+
+      )
+
+      add_executable(${PROJECT_NAME}_flip_images src/flip_images.cpp
+      src/depthImage.cpp)
+      ## Specify libraries to link a library or executable target against
+       target_link_libraries(${PROJECT_NAME}_flip_images
+         ${catkin_LIBRARIES}
+         ${OpenCV_LIBS}
+         ${OpenCV_LIBRARIES}
+
+       )
