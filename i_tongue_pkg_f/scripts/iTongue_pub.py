@@ -63,6 +63,7 @@ class Window(QtGui.QMainWindow):
         self.pubVel = rospy.Publisher('cmd_vel', Twist, queue_size=10)
         self.pubTake = rospy.Publisher('/ardrone/takeoff', Empty, queue_size = 1)
         self.pubLand = rospy.Publisher('/ardrone/land', Empty, queue_size = 1)
+        self.pubEmer = rospy.Publisher('/ardrone/reset', Empty, queue_size = 1)
         self.pubHover = rospy.Publisher('/hover_mode', Bool, queue_size = 1)
         self.subCollision = rospy.Subscriber("/Collision",Bool, self.collision_callback)
         self.empty_msg = Empty()
@@ -191,13 +192,13 @@ class Window(QtGui.QMainWindow):
 
         if self.H_count > 20:
             if not self.activated:
-                print('activate hover')
-                self.pubHover.publish(True)
+                print('Emergency Stop')
+                self.pubEmer.publish(self.empty_msg)
                 self.activated = True
                 self.H_count = 0
             elif self.activated:
-                print('deactivate hover')
-                self.pubHover.publish(False)
+                #print('deactivate hover')
+                self.pubEmer.publish(self.empty_msg)
                 self.activated = False
                 self.H_count = 0
 
