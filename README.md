@@ -5,7 +5,6 @@ Place the following ros packages into the /src folder in a catkin workspace
     - AR_drone-Custom_teleop
     - P4GUI
     - depthDetection
-    - Drift package
     - i_tongue_pkg_f
     - obstacle_avoidance
     
@@ -34,21 +33,6 @@ See readme in P4GUI
 # depthDetection (human detection)
 
 see readme in folder.
-
-# Drift package
-Used to stabilize the drift of the drone and stabilize its hovering. Currently, it has only been tested in the simulation.
-
-Add the package to a workspace, change line 163 in te cmakelist and build it.
-
-Pretty much just run the code.
-rosrun drift_pkg v1_drift.py
-
-It will say ready, when it is ready. Otherwise there is a problem with subscribing to data from the bottom camera.
-It will work if it is running along with the simulation of the drone.
-
-Turning on and off with these commands in terminal(true for activation)
-rostopic pub /hover_mode std_msgs/Bool '{data: True}'
-rostopic pub /hover_mode std_msgs/Bool '{data: False}'
 
 # i_tongue_package
 
