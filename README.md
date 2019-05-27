@@ -20,9 +20,9 @@ See readme in custom_teleop_keyboard folder
 
 See readme in P4GUI
 
-# i_tongue_package
+# depthDetection (human detection)
 
-See setup in folder
+see readme in folder.
 
 # Drift package
 Used to stabilize the drift of the drone and stabilize its hovering. Currently, it has only been tested in the simulation.
@@ -38,3 +38,15 @@ It will work if it is running along with the simulation of the drone.
 Turning on and off with these commands in terminal(true for activation)
 rostopic pub /hover_mode std_msgs/Bool '{data: True}'
 rostopic pub /hover_mode std_msgs/Bool '{data: False}'
+
+# i_tongue_package
+
+See setup in folder.
+
+# obstacle_avoidance
+
+See setup in folder.
+
+# pico_flexx_python
+
+Place in the pico flexx sdk python samples folder and run with python3.
