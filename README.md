@@ -1,12 +1,13 @@
 # P4 project - Group 470 - Drone control
 
-This github repository is a collection of the ROS nodes developed for this P4 project. The code is therefore mean to be executed as ros nodes.
+This github repository is a collection of the ROS nodes developed for this P4 project. The code is therefore meant to be executed as ros nodes.
 
 Prerequisites:
     
     Royale SDK - for the pico flexx camera
     sudo apt-get install ros-kinetic-teleop-twist-keyboard
     ar drone autonomy ros package
+    OpenCv
     
 
 # AR_Drone-Custom_teleop
@@ -80,37 +81,9 @@ How to run a simulation using ar_track_alvar tags:
 
 
 
-# OpenCV GUI
+# OpenCV GUI (beyond visual line of flight)
 
-Prerequisites
-    Install OpenCV by this tutorial https://www.learnopencv.com/install-opencv3-on-ubuntu/ (OpenCV4 might also work, I dont know).
-
-    sudo apt-get install ros-kinetic-image-view
-    sudo apt-get install ros-kinetic-gazebo-ros-pkgs ros-kinetic-gazebo-ros-control
-    sudo apt-get install ros-kinetic-cv-bridge
-    sudo apt-get install ros-kinetic-vision-opencv
-
-Download the 'P4GUI' folder and place it next to the custom_keyboard folder in ~/ardrone_simulator/src
-
-    cd ~/ardrone_simulator/
-    catkin_make
-    source devel/setup.bash
-    
-From here you will need 3 terminals, one for the simulation, one for the custom_teleop one for P4GUI
-
-1. Simulation
-
-    roslaunch cvg_sim_gazebo ardrone_testworld.launch
-    
-2. Custom teleop
-
-    rosrun custom_keyboard teleop_twist_keyboard.py 
-    
-3. GUI opencv node
-
-    rosrun p4GUI p4GUI_node
-
-The p4Gui node subscribes to the /ardrone/front/image_raw topic and converts it into a opencv Mat c++ object. For the real drone the topic to subscribe to might differ.
+See readme in P4GUI
 
 # i_tongue_package
 
