@@ -1,5 +1,16 @@
 # P4 project - Group 470 - Drone control
 
+Place the following ros packages into the /src folder in a catkin workspace
+
+    - AR_drone-Custom_teleop
+    - P4GUI
+    - depthDetection
+    - Drift package
+    - i_tongue_pkg_f
+    - obstacle_avoidance
+    
+The pico_flexx_python folder contains a ros publisher meant to be run on the micro-controller (Raspberry Pi)
+
 This github repository is a collection of the ROS nodes developed for this P4 project. The code is therefore meant to be executed as ros nodes.
 
 Prerequisites:
