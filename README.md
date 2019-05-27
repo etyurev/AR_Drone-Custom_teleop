@@ -49,4 +49,4 @@ See setup in folder.
 
 # pico_flexx_python
 
-Place in the pico flexx sdk python samples folder and run with python3.
+Place in the pico flexx sdk python samples folder and run with python3 on the Raspberry Pi 3b.
