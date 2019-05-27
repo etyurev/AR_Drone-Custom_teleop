@@ -10,6 +10,7 @@ from geometry_msgs.msg import Pose2D
 from geometry_msgs.msg import Twist
 from std_msgs.msg import Empty
 from std_msgs.msg import Bool
+from ardrone_autonomy.msg import Navdata
 import numpy
 import math
 import sys
@@ -18,6 +19,7 @@ from PyQt4 import QtGui, QtCore
 
 tongue_mode = 1  #1 for tongue_mode -1 for hand mode
 y_upper_lim = 100
+height_max = 2130 #max height mm
 
 class serial_handle(QtCore.QObject):
 
@@ -66,12 +68,15 @@ class Window(QtGui.QMainWindow):
         self.pubEmer = rospy.Publisher('/ardrone/reset', Empty, queue_size = 1)
         self.pubHover = rospy.Publisher('/hover_mode', Bool, queue_size = 1)
         self.subCollision = rospy.Subscriber("/Collision",Bool, self.collision_callback)
+        self.subHeight = rospy.Subscriber("/navdata", Navdata, self.height_callback)
         self.empty_msg = Empty()
         self.H_count = 0
         self.T_count = 0
         self.A_count = 0
         self.activated = False
         self.home()
+        self.height = 0
+
 
     def home(self):
         # Initialization
@@ -128,6 +133,9 @@ class Window(QtGui.QMainWindow):
             self.thread.terminate()
             self.serialObj.close()
 
+    def height_callback(self, Navdata):
+        self.height=Navdata.altd
+
     def collision_callback(self, bool_data):
         if bool_data.data:
             self.activated = True
@@ -153,7 +161,14 @@ class Window(QtGui.QMainWindow):
             vel_cmd.linear.y = 0
             H_count=0
         elif key == 'U':
-            vel_cmd.linear.z =  0.5
+            if self.height < height_max:
+                vel_cmd.linear.z =  0.5
+            else:
+                vel_cmd.linear.x = 0
+                vel_cmd.angular.z =
+                vel_cmd.linear.z = 0
+                vel_cmd.linear.y = 0
+                print('Cannot go higher')
         elif key == 'D':
             vel_cmd.linear.z = -0.5
         elif key == 'A':
