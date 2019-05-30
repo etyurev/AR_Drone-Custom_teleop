@@ -36,6 +36,8 @@ see readme in folder.
 
 # i_tongue_package
 
+For controlling the drone with the ITCI. Remember to connect via bluetooth.
+
 See setup in folder.
 
 # obstacle_avoidance
